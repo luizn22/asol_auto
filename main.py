@@ -7,7 +7,11 @@ from foo import create_txt
 
 
 def run():
-    create_txt(r'C:\Users\luiz\PycharmProjects\asol_auto\plusw.txt', r'C:\Users\luiz\PycharmProjects\asol_auto')
+    create_txt(
+        [r'C:\Users\luiz\PycharmProjects\asol_auto\plusw.txt'],
+        [1, 2, 3],
+        r'C:\Users\luiz\PycharmProjects\asol_auto'
+    )
 
 
 # Press the green button in the gutter to run the script.
