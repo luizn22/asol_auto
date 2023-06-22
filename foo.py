@@ -53,11 +53,11 @@ class Dot:
         return self
 
     def to_str(self, idx: int) -> str:
-        return f'''P[{idx}]
+        return f'''P[{idx}]{{
    GP1:
-    UF : {self.UF}, UT : {self.UT},		CONFIG : {self.CONFIG},
-    X =   {self.X}  mm,	Y =   {self.Y}  mm,	Z =   {self.Z}  mm,
-    W =     {self.W} deg,	P =     {self.P} deg,	R =    {self.R} deg
+    UF : {self.UF}, UT : {self.UT},		CONFIG : '{self.CONFIG}',
+    X =   {self.X:.2f}  mm,	Y =   {self.Y:.2f}  mm,	Z =   {self.Z:.2f}  mm,
+    W =     {self.W:.2f} deg,	P =     {self.P:.2f} deg,	R =    {self.R:.2f} deg
 }};'''
 
 
@@ -97,12 +97,32 @@ class RouteData:
 
 
 class NewRoute:
-    def __init__(self, src_route_data: List[RouteData], layer_z_delta: List[float],
+    droped_headers = [
+        'OWNER',
+        'COMMENT',
+        'CREATE',
+        'MODIFIED',
+        'FILE_NAME',
+        'VERSION',
+        'LINE_COUNT',
+        'PROTECT',
+        'TCD',
+        'STACK_SIZE',
+        'TASK_PRIORITY',
+        'TIME_SLICE',
+        'BUSY_LAMP_OFF',
+        'ABORT_REQUEST',
+        'PAUSE_REQUEST',
+        'DEFAULT_GROUP',
+        'CONTROL_CODE',
+        'PROG_SIZE',
+        'MEMORY_SIZE',
+    ]
+
+    def __init__(self, src_route_data: List[RouteData], layer_z_delta: List[float], drop_unused_headers=False, 
                  rotate_90_in_z: bool, xy_center: Tuple[float, float], drop_angles: bool):
         if not src_route_data:
             raise ValueError('src_route_data must not be empty')
-        if not layer_z_delta:
-            raise ValueError('layer_delta must not be empty')
 
         self.rotate_90_in_z = rotate_90_in_z
         self.xy_center = xy_center
@@ -112,6 +132,8 @@ class NewRoute:
         self.header_src_route = self.src_route_data[0]
 
         self.header = self.header_src_route.header
+        if drop_unused_headers:
+            self.header = self.filter_header(self.header)
 
         self.layer_z_delta = [0.0] + layer_z_delta
 
@@ -121,6 +143,17 @@ class NewRoute:
         self.prev_dot_idx = 1
 
         self.build_route()
+
+    def filter_header(self, header):
+        lines = header.split('\n')  # Split the big string into lines
+        filtered_lines = []
+
+        for line in lines:
+            if not any(substring in line for substring in self.droped_headers):
+                filtered_lines.append(line)
+
+        result = '\n'.join(filtered_lines)  # Join the remaining lines back into a string
+        return result
 
     def build_route(self):
         cur_route_idx = 0
@@ -163,9 +196,10 @@ class NewRoute:
                 self.header
                 + self.header_src_route.mn_splitter
                 + '\n'.join(self.trag_strs)
-                + self.header_src_route.pos_splitter
+                + self.header_src_route.pos_splitter + '\n'
                 + '\n'.join(self.dots_strs)
                 + self.header_src_route.end_spliter
+                + '\n'
         )
 
 

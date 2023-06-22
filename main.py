@@ -8,8 +8,8 @@ from foo import create_txt
 
 def run():
     create_txt(
-        [r'C:\Users\luiz\PycharmProjects\asol_auto\plusw.txt'],
-        [1, 2, 3],
+        [r'C:\Users\luiz\PycharmProjects\asol_auto\plusw.txt', r'C:\Users\luiz\PycharmProjects\asol_auto\plusw.txt'],
+        [1000, 2000, 3000],
         r'C:\Users\luiz\PycharmProjects\asol_auto',
         rotate_90_in_z=True,
         xy_center=(704.1, -13.75),
