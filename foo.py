@@ -1,10 +1,11 @@
 import os
 import re
-from typing import List
+from typing import List, Tuple
 
 
 class Dot:
     pattern = r'P\[\d+\]'
+
     def __init__(self, data: str):
 
         result = re.findall(self.pattern, data)
@@ -34,6 +35,21 @@ class Dot:
 
     def apply_z_delta(self, z_delta: float):
         self.Z = round(self.Z + z_delta, 2)
+        return self
+
+    def drop_angles(self):
+        self.R = '0.00'
+        self.P = '0.00'
+        self.W = '0.00'
+        return self
+
+    def rotate_90_on_xy(self, x, y):
+        old_x = self.X
+        old_y = self.Y
+        local_x = old_x - x
+        local_y = old_y - y
+        self.X = round(-local_y + x, 2)
+        self.Y = round(local_x + y, 2)
         return self
 
     def to_str(self, idx: int) -> str:
@@ -81,11 +97,16 @@ class RouteData:
 
 
 class NewRoute:
-    def __init__(self, src_route_data: List[RouteData], layer_z_delta: List[float]):
+    def __init__(self, src_route_data: List[RouteData], layer_z_delta: List[float],
+                 rotate_90_in_z: bool, xy_center: Tuple[float, float], drop_angles: bool):
         if not src_route_data:
             raise ValueError('src_route_data must not be empty')
         if not layer_z_delta:
             raise ValueError('layer_delta must not be empty')
+
+        self.rotate_90_in_z = rotate_90_in_z
+        self.xy_center = xy_center
+        self.drop_angles = drop_angles
 
         self.src_route_data = src_route_data
         self.header_src_route = self.src_route_data[0]
@@ -112,7 +133,14 @@ class NewRoute:
             for en_idx, dot in enumerate(cur_route.dots):
                 cur_dot_idx = en_idx + self.prev_dot_idx
                 old_to_new_dot_di[dot.src_idx] = cur_dot_idx
-                self.dots_strs.append(dot.apply_z_delta(z_delta).to_str(cur_dot_idx))
+                if self.drop_angles:
+                    dot = dot.drop_angles()
+                if self.rotate_90_in_z:
+                    dot = dot.rotate_90_on_xy(*self.xy_center)
+
+                self.dots_strs.append(
+                    dot.apply_z_delta(z_delta).to_str(cur_dot_idx)
+                )
 
             self.prev_dot_idx = cur_dot_idx
 
@@ -132,16 +160,17 @@ class NewRoute:
 
     def to_str(self) -> str:
         return (
-            self.header
-            + self.header_src_route.mn_splitter
-            + '\n'.join(self.trag_strs)
-            + self.header_src_route.pos_splitter
-            + '\n'.join(self.dots_strs)
-            + self.header_src_route.end_spliter
+                self.header
+                + self.header_src_route.mn_splitter
+                + '\n'.join(self.trag_strs)
+                + self.header_src_route.pos_splitter
+                + '\n'.join(self.dots_strs)
+                + self.header_src_route.end_spliter
         )
 
 
-def create_txt(src_data: List[str], layer_z_delta: List[float], out_path: str):
+def create_txt(src_data: List[str], layer_z_delta: List[float], out_path: str,
+               rotate_90_in_z: bool, xy_center: Tuple[float, float], drop_angles: bool):
     r_dat_li = []
 
     for src_data_item in src_data:
@@ -150,7 +179,8 @@ def create_txt(src_data: List[str], layer_z_delta: List[float], out_path: str):
 
         r_dat_li.append(RouteData(src))
 
-    new_route = NewRoute(r_dat_li, layer_z_delta)
+    new_route = NewRoute(r_dat_li, layer_z_delta, rotate_90_in_z=rotate_90_in_z, xy_center=xy_center,
+                         drop_angles=drop_angles)
     new_route_str = new_route.to_str()
 
     print(new_route_str)
