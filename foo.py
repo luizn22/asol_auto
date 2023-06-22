@@ -38,9 +38,9 @@ class Dot:
         return self
 
     def drop_angles(self):
-        self.R = '0.00'
-        self.P = '0.00'
-        self.W = '0.00'
+        self.R = 0
+        self.P = 0
+        self.W = 0
         return self
 
     def rotate_90_on_xy(self, x, y):
@@ -120,7 +120,7 @@ class NewRoute:
     ]
 
     def __init__(self, src_route_data: List[RouteData], layer_z_delta: List[float], drop_unused_headers=False, 
-                 rotate_90_in_z: bool, xy_center: Tuple[float, float], drop_angles: bool):
+                 rotate_90_in_z: bool = False, xy_center: Tuple[float, float] = None, drop_angles: bool = False):
         if not src_route_data:
             raise ValueError('src_route_data must not be empty')
 
